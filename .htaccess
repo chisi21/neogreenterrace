@@ -1,0 +1,6 @@
+DirectoryIndex index.html
+
+RewriteEngine On
+RewriteRule ^admin-panel/?$ admin-panel.html [L]
+RewriteRule ^artikel/?$ artikel.html [L]
+RewriteRule ^kontak/?$ kontak.html [L]

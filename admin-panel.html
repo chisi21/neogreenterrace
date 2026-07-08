@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Admin Panel — Neo Green Terrace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="admin">
+
+  <section class="admin-login" id="loginView">
+    <form class="admin-login__card" id="loginForm">
+      <a href="index.html" class="admin-login__logo"><img src="assets/logo2.png" alt="Neo Green Terrace" /></a>
+      <h1 class="admin-login__title">Admin Panel</h1>
+      <p class="admin-login__sub">Masuk untuk membuat &amp; mengelola artikel.</p>
+      <div class="field">
+        <label for="u">Username</label>
+        <input type="text" id="u" name="username" autocomplete="username" placeholder="admin" required />
+      </div>
+      <div class="field">
+        <label for="p">Password</label>
+        <input type="password" id="p" name="password" autocomplete="current-password" placeholder="••••••••" required />
+      </div>
+      <p class="admin-msg" id="loginMsg"></p>
+      <button type="submit" class="btn btn--gold" style="width:100%;justify-content:center;">Masuk</button>
+    </form>
+  </section>
+
+  <section class="admin-editor" id="editorView" hidden>
+    <header class="admin-bar">
+      <a href="index.html" class="admin-bar__brand"><img src="assets/logo2.png" alt="" /> Neo Green Terrace</a>
+      <div class="admin-bar__actions">
+        <a href="artikel.html" target="_blank" class="btn btn--outline btn--sm">Lihat Artikel</a>
+        <button type="button" class="btn btn--ghost btn--sm" id="logoutBtn">Keluar</button>
+      </div>
+    </header>
+
+    <div class="admin-editor__inner">
+      <h1 class="admin-editor__heading">Tulis Artikel Baru</h1>
+      <p class="admin-editor__meta">Penulis: <strong>Admin</strong> &middot; Tanggal: otomatis saat dipublikasikan</p>
+
+      <div class="field">
+        <label>Gambar Sampul (Featured)</label>
+        <div class="cover-drop" id="coverDrop">
+          <input type="file" id="coverInput" accept="image/*" hidden />
+          <div class="cover-drop__placeholder" id="coverPlaceholder">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10m0 0 4-4m-4 4-4-4M5 19h14"/></svg>
+            <span>Klik untuk unggah gambar sampul</span>
+          </div>
+          <img id="coverPreview" alt="" hidden />
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="title">Judul Artikel</label>
+          <input type="text" id="title" placeholder="Judul artikel..." />
+        </div>
+        <div class="field">
+          <label for="category">Kategori</label>
+          <select id="category">
+            <option>News &amp; Analysis</option>
+            <option>Industry Insight</option>
+            <option>Fashion &amp; Retail</option>
+            <option>Trade &amp; Business</option>
+            <option>Textile World</option>
+            <option>Traditional</option>
+            <option selected>Uncategorized</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Isi Artikel</label>
+        <div class="toolbar" id="toolbar">
+          <button type="button" data-cmd="feature" title="Teks Unggulan">❝ Feature</button>
+          <span class="toolbar__sep"></span>
+          <button type="button" data-cmd="h1" title="Headline 1"><b>H1</b></button>
+          <button type="button" data-cmd="h2" title="Headline 2"><b>H2</b></button>
+          <button type="button" data-cmd="h3" title="Headline 3"><b>H3</b></button>
+          <button type="button" data-cmd="p" title="Paragraf">¶</button>
+          <span class="toolbar__sep"></span>
+          <button type="button" data-cmd="bold" title="Tebal"><b>B</b></button>
+          <button type="button" data-cmd="italic" title="Miring"><i>I</i></button>
+          <span class="toolbar__sep"></span>
+          <button type="button" data-cmd="image" title="Sisipkan Gambar">🖼 Gambar</button>
+        </div>
+        <div class="editor-area" id="editor" contenteditable="true" data-placeholder="Mulai menulis artikel di sini...">
+          <p><br /></p>
+        </div>
+        <input type="file" id="inlineImageInput" accept="image/*" hidden />
+      </div>
+
+      <p class="admin-msg" id="postMsg"></p>
+      <div class="admin-editor__foot">
+        <button type="button" class="btn btn--gold" id="postBtn">
+          Publikasikan Artikel
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <script>
+  (function () {
+    "use strict";
+    const TOKEN_KEY = "ngt_admin_token";
+    const loginView = document.getElementById("loginView");
+    const editorView = document.getElementById("editorView");
+
+    function token() { return localStorage.getItem(TOKEN_KEY) || ""; }
+    function show(authed) {
+      loginView.hidden = authed;
+      editorView.hidden = !authed;
+    }
+    show(!!token());
+
+    const loginForm = document.getElementById("loginForm");
+    const loginMsg = document.getElementById("loginMsg");
+    loginForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      loginMsg.textContent = "Memeriksa...";
+      loginMsg.className = "admin-msg";
+      fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: document.getElementById("u").value, password: document.getElementById("p").value }),
+      })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.ok) { localStorage.setItem(TOKEN_KEY, d.token); show(true); }
+          else { loginMsg.textContent = d.error || "Gagal masuk."; loginMsg.classList.add("is-error"); }
+        })
+        .catch(() => { loginMsg.textContent = "Server tidak merespons."; loginMsg.classList.add("is-error"); });
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", function () {
+      localStorage.removeItem(TOKEN_KEY);
+      show(false);
+    });
+
+    function fileToDataUrl(file) {
+      return new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result);
+        r.onerror = rej;
+        r.readAsDataURL(file);
+      });
+    }
+    function upload(file) {
+      return fileToDataUrl(file).then((dataUrl) =>
+        fetch("/api/upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: "Bearer " + token() },
+          body: JSON.stringify({ dataUrl }),
+        }).then((r) => r.json())
+      );
+    }
+
+    let coverUrl = "";
+    const coverDrop = document.getElementById("coverDrop");
+    const coverInput = document.getElementById("coverInput");
+    const coverPreview = document.getElementById("coverPreview");
+    const coverPlaceholder = document.getElementById("coverPlaceholder");
+    coverDrop.addEventListener("click", () => coverInput.click());
+    coverInput.addEventListener("change", function () {
+      const f = coverInput.files[0];
+      if (!f) return;
+      coverPlaceholder.textContent = "Mengunggah...";
+      upload(f).then((d) => {
+        if (d.ok) {
+          coverUrl = d.url;
+          coverPreview.src = d.url;
+          coverPreview.hidden = false;
+          coverPlaceholder.hidden = true;
+        } else { coverPlaceholder.textContent = "Gagal unggah."; }
+      });
+    });
+
+    const editor = document.getElementById("editor");
+    const inlineInput = document.getElementById("inlineImageInput");
+    document.getElementById("toolbar").addEventListener("click", function (e) {
+      const btn = e.target.closest("button[data-cmd]");
+      if (!btn) return;
+      const cmd = btn.getAttribute("data-cmd");
+      editor.focus();
+      if (cmd === "bold") document.execCommand("bold");
+      else if (cmd === "italic") document.execCommand("italic");
+      else if (cmd === "h1") document.execCommand("formatBlock", false, "h1");
+      else if (cmd === "h2") document.execCommand("formatBlock", false, "h2");
+      else if (cmd === "h3") document.execCommand("formatBlock", false, "h3");
+      else if (cmd === "p") document.execCommand("formatBlock", false, "p");
+      else if (cmd === "feature") document.execCommand("formatBlock", false, "blockquote");
+      else if (cmd === "image") inlineInput.click();
+    });
+    inlineInput.addEventListener("change", function () {
+      const f = inlineInput.files[0];
+      if (!f) return;
+      upload(f).then((d) => {
+        if (d.ok) {
+          editor.focus();
+          document.execCommand("insertHTML", false, '<img src="' + d.url + '" alt="" />');
+        }
+        inlineInput.value = "";
+      });
+    });
+
+    const postMsg = document.getElementById("postMsg");
+    document.getElementById("postBtn").addEventListener("click", function () {
+      const title = document.getElementById("title").value.trim();
+      const category = document.getElementById("category").value;
+      const content = editor.innerHTML.trim();
+      if (!title) { postMsg.textContent = "Judul wajib diisi."; postMsg.className = "admin-msg is-error"; return; }
+      postMsg.textContent = "Mempublikasikan...";
+      postMsg.className = "admin-msg";
+      fetch("/api/articles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token() },
+        body: JSON.stringify({ title, category, cover: coverUrl, content }),
+      })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.ok) {
+            postMsg.innerHTML = 'Artikel berhasil dipublikasikan! <a href="artikel.html?id=' + d.article.id + '" target="_blank">Lihat artikel &rarr;</a>';
+            postMsg.className = "admin-msg is-ok";
+            document.getElementById("title").value = "";
+            editor.innerHTML = "<p><br/></p>";
+            coverUrl = ""; coverPreview.hidden = true; coverPlaceholder.hidden = false;
+            coverPlaceholder.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 4v10m0 0 4-4m-4 4-4-4M5 19h14"/></svg><span>Klik untuk unggah gambar sampul</span>';
+          } else if (d.error === "unauthorized") {
+            postMsg.textContent = "Sesi berakhir, silakan login ulang."; postMsg.className = "admin-msg is-error";
+            localStorage.removeItem(TOKEN_KEY); show(false);
+          } else { postMsg.textContent = d.error || "Gagal mempublikasikan."; postMsg.className = "admin-msg is-error"; }
+        })
+        .catch(() => { postMsg.textContent = "Server tidak merespons."; postMsg.className = "admin-msg is-error"; });
+    });
+  })();
+  </script>
+</body>
+</html>

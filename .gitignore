@@ -1,0 +1,7 @@
+node_modules/
+
+assets/hero-original.mp4
+
+.DS_Store
+Thumbs.db
+*.log
